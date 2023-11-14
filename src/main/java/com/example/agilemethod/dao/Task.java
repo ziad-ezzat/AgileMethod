@@ -10,4 +10,5 @@ public class Task {
     private String name;
     private String description;
     private TaskStatus status;
+    private String userId;
 }

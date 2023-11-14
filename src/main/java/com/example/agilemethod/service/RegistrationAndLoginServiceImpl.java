@@ -99,7 +99,7 @@ public class RegistrationAndLoginServiceImpl implements RegistrationAndLoginServ
         }
     }
 
-    public void sendEmail(String to, String subject, String body) {
+    private void sendEmail(String to, String subject, String body) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
 

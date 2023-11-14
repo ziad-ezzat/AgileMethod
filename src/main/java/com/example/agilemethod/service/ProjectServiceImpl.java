@@ -1,9 +1,12 @@
 package com.example.agilemethod.service;
 
 import com.example.agilemethod.dao.Project;
+import com.example.agilemethod.dao.Sprint;
 import com.example.agilemethod.dao.User;
 import com.example.agilemethod.dto.request.ProjectReqDTO;
+import com.example.agilemethod.dto.request.SprintReqDTO;
 import com.example.agilemethod.mapper.ProjectMapper;
+import com.example.agilemethod.mapper.SprintMapper;
 import com.example.agilemethod.util.AgileUtils;
 import com.example.agilemethod.util.Constants;
 import com.google.api.core.ApiFuture;
@@ -13,7 +16,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.google.firebase.cloud.FirestoreClient;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ExecutionException;
@@ -23,6 +30,12 @@ public class ProjectServiceImpl implements ProjectService{
 
     @Autowired
     private ProjectMapper projectMapper;
+
+    @Autowired
+    private SprintMapper sprintMapper;
+
+    @Autowired
+    private JavaMailSender javaMailSender;
 
 
     @Override
@@ -79,6 +92,10 @@ public class ProjectServiceImpl implements ProjectService{
 
         db.collection(Constants.ProjectTable).document(projectId).collection("users").document(user.getEmail()).set(user);
 
+        Project project = db.collection(Constants.ProjectTable).document(projectId).get().get().toObject(Project.class);
+
+        sendEmail(user.getEmail(), "You have been added to a project", "You have been added to a project " + project.getName() + " Check it out Now!");
+
         return "User added to project successfully";
     }
 
@@ -99,6 +116,54 @@ public class ProjectServiceImpl implements ProjectService{
             }
 
             db.collection(Constants.ProjectTable).document(projectId).collection("users").document(email).delete();
+
+            Project project = db.collection(Constants.ProjectTable).document(projectId).get().get().toObject(Project.class);
+
+            sendEmail(email, "You have been removed from a project", "You have been removed from a project " + project.getName() + " Check it out Now!");
+
             return "User removed from project successfully";
+    }
+
+    @Override
+    public String createSprint(String projectId, SprintReqDTO sprintReqDTO) throws ExecutionException, InterruptedException {
+
+        if (!AgileUtils.isExistInTable(Constants.ProjectTable, projectId)) {
+            return "Project not found";
+        }
+
+        Firestore db = FirestoreClient.getFirestore();
+        String id = AgileUtils.generateId(Constants.SprintTable);
+        Sprint sprint = sprintMapper.toSprint(sprintReqDTO);
+        sprint.setId(id);
+        sprint.setProjectId(projectId);
+        db.collection(Constants.SprintTable).document(id).set(sprint);
+        return "Sprint created successfully";
+    }
+
+    @Override
+    public String deleteSprint(String sprintId) throws ExecutionException, InterruptedException {
+
+        if (!AgileUtils.isExistInTable(Constants.SprintTable, sprintId)) {
+            return "Sprint not found";
+        }
+
+        Firestore db = FirestoreClient.getFirestore();
+        db.collection(Constants.SprintTable).document(sprintId).delete();
+        return "Sprint deleted successfully";
+    }
+
+    private void sendEmail(String to, String subject, String body) {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
+
+        try {
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(body);
+
+            javaMailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
     }
 }

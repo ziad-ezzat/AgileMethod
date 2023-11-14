@@ -22,4 +22,14 @@ public class TaskController {
     public String deleteTask(@RequestParam String id) {
         return taskService.deleteTask(id);
     }
+
+    @PutMapping("/addUser")
+    public String addTaskToUser(@RequestParam String taskId, @RequestParam String email) throws Exception {
+        return taskService.addTaskToUser(taskId, email);
+    }
+
+    @PutMapping("/removeUser")
+    public String removeTaskFromUser(@RequestParam String taskId) throws Exception {
+        return taskService.removeTaskFromUser(taskId);
+    }
 }

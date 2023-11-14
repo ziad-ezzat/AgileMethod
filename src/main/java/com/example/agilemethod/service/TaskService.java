@@ -8,5 +8,10 @@ import java.util.concurrent.ExecutionException;
 public interface TaskService {
 
     TaskDTO createTask(TaskReqDTO taskReqDTO) throws ExecutionException, InterruptedException;
+
     String deleteTask(String id);
+
+    String addTaskToUser(String taskId, String email) throws ExecutionException, InterruptedException;
+
+    String removeTaskFromUser(String taskId) throws ExecutionException, InterruptedException;
 }
